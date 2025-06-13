@@ -1,0 +1,122 @@
+// Brain Coach 앱을 위한 Prisma 스키마 파일
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 사용자 모델 - Clerk와 연동
+// Clerk에서 처리하는 사용자 정보와 연결
+// clerkId는 Clerk에서 제공하는 고유 ID
+// 사용자의 추가 정보를 저장하기 위한 모델
+model User {
+  id        String    @id @default(uuid())
+  clerkId   String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  nickname  String?
+  grade     Int?
+  
+  // 사용자가 작성한 일기
+  journals  Journal[]
+  
+  // 사용자의 학습 목표
+  goals     Goal[]
+  
+  // 사용자의 진행중인 퀴즈
+  quizzes   Quiz[]
+  
+  // 사용자의 점수 기록
+  scores    Score[]
+}
+
+// 메타인지 일기 모델
+model Journal {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  title       String
+  content     String
+  mood        String?
+  reflection  String?
+  aiResponse  String?
+  
+  // 사용자와의 연결
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
+
+// 학습 목표 모델
+model Goal {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  title       String
+  description String?
+  completed   Boolean  @default(false)
+  dueDate     DateTime?
+  
+  // 사용자와의 연결
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
+
+// 퀴즈 모델
+model Quiz {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  title       String
+  description String?
+  completed   Boolean  @default(false)
+  
+  // 퀴즈 문제
+  questions   Question[]
+  
+  // 사용자와의 연결
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
+
+// 퀴즈 문제 모델
+model Question {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  content     String
+  options     String[] // JSON 형태로 저장되는 옵션
+  correctOption Int
+  explanation String?
+  
+  // 퀴즈와의 연결
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  
+  @@index([quizId])
+}
+
+// 점수 모델
+model Score {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  score       Int
+  category    String
+  description String?
+  
+  // 사용자와의 연결
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
