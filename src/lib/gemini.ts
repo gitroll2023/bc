@@ -47,25 +47,36 @@ const getGradeSpecificPrompt = (grade: number) => {
 export async function generateChatResponse(message: string, userGrade: number) {
   try {
     // 모델 선택 (Gemini 1.5 Flash 사용)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    // 챗 세션 생성
-    const chat = model.startChat({
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
       generationConfig: {
         maxOutputTokens: 200,
         temperature: 0.7,
-      },
-      systemInstruction: getGradeSpecificPrompt(userGrade),
+      }
     });
 
-    // 응답 생성
-    const result = await chat.sendMessage(message);
+    // 프롬프트 생성
+    const prompt = getGradeSpecificPrompt(userGrade);
+    
+    // 메시지 생성 - 프롬프트와 사용자 메시지 함께 전송
+    const result = await model.generateContent([
+      { text: prompt + "\n\n사용자: " + message },
+    ]);
+    
     const response = await result.response;
     const text = response.text();
     
     return text;
   } catch (error) {
     console.error("Gemini API 오류:", error);
-    throw new Error("챗봇 응답을 생성하는 중 오류가 발생했습니다.");
+    
+    // 오류 메시지 상세화
+    let errorMessage = "챗봇 응답을 생성하는 중 오류가 발생했습니다.";
+    
+    if (error instanceof Error) {
+      errorMessage += ` (오류 유형: ${error.name}, 메시지: ${error.message})`;
+    }
+    
+    throw new Error(errorMessage);
   }
 }
